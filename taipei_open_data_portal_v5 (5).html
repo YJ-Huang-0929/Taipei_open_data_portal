@@ -1,0 +1,627 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.portal { padding: 1.5rem 1.25rem; }
+.hero { margin-bottom: 2rem; }
+.hero h1 { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.hero p { font-size: 14px; color: var(--color-text-secondary); }
+.tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.tab { padding: 8px 16px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -0.5px; transition: all 0.15s; }
+.tab.active { color: var(--color-text-primary); font-weight: 500; border-bottom-color: var(--color-text-primary); }
+.tab:hover:not(.active) { color: var(--color-text-primary); }
+.section { display: none; }
+.section.active { display: block; }
+
+/* 搜尋 */
+.search-box { display: flex; gap: 8px; margin-bottom: 8px; }
+.search-box input { flex: 1; }
+.search-box button { padding: 0 16px; white-space: nowrap; }
+.search-hint { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 14px; }
+.ai-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--color-background-info); color: var(--color-text-info); margin-bottom: 12px; }
+.ai-badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-info); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* thinking */
+.thinking-box { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); margin-bottom: 14px; font-size: 13px; color: var(--color-text-secondary); }
+.thinking-dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--color-text-tertiary); margin: 0 2px; animation: bounce .9s infinite; }
+.thinking-dots span:nth-child(2){animation-delay:.15s}
+.thinking-dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+
+/* 消歧義 */
+.suggest-box { display: none; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 14px; }
+.suggest-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--color-background-secondary); font-size: 12px; color: var(--color-text-secondary); }
+.suggest-header strong { color: var(--color-text-primary); font-weight: 500; }
+.suggest-clear { font-size: 11px; color: var(--color-text-tertiary); cursor: pointer; border: none; background: none; padding: 0; }
+.suggest-clear:hover { color: var(--color-text-secondary); }
+.suggest-intent { padding: 10px 14px 0; font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+.suggest-intent em { color: var(--color-text-primary); font-style: normal; font-weight: 500; }
+.suggest-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 14px 14px; }
+.s-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 5px 12px; border-radius: 999px; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); cursor: pointer; transition: all .12s; }
+.s-chip:hover { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+.s-chip .chip-tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--color-background-secondary); color: var(--color-text-tertiary); margin-left: 2px; }
+.s-chip:hover .chip-tag { background: rgba(255,255,255,.15); color: rgba(255,255,255,.7); }
+
+/* 資料集結果卡 */
+.result-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+.result-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+.result-card h3 { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.result-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 8px; }
+.result-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); }
+.pill-geo { background: #e1f5ee; color: #0f6e56; border-color: #5dcaa5; }
+.pill-tel { background: #e6f1fb; color: #185fa5; border-color: #378add; }
+.pill-src { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+.result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-action { font-size: 12px; padding: 4px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: background .1s; }
+.btn-action:hover { background: var(--color-background-secondary); }
+
+/* source note */
+.source-note { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.source-dot { width: 6px; height: 6px; border-radius: 50%; background: #3a9e6e; display: inline-block; flex-shrink: 0; }
+
+/* 統計 */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
+.stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.stat-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.bar-label { font-size: 12px; color: var(--color-text-secondary); min-width: 50px; text-align: right; }
+.bar-track { flex: 1; height: 16px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: #378ADD; border-radius: 3px; transition: width 0.8s ease; }
+.bar-count { font-size: 12px; color: var(--color-text-tertiary); min-width: 28px; }
+.map-placeholder { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.map-placeholder p { font-size: 13px; color: var(--color-text-secondary); }
+
+/* 留言 */
+.comment-form textarea { width: 100%; height: 80px; resize: none; font-size: 13px; padding: 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); }
+.comment-item { padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; color: var(--color-text-primary); }
+.comment-meta { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 3px; }
+.empty-state { text-align: center; padding: 2rem; font-size: 14px; color: var(--color-text-secondary); }
+.ext-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 5px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); color: var(--color-text-info); text-decoration: none; background: var(--color-background-primary); transition: background .12s; }
+.ext-link:hover { background: var(--color-background-secondary); }
+
+/* 資料集總覽卡 */
+.dataset-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--color-border-tertiary); cursor: pointer; }
+.dataset-item:last-child { border-bottom: none; }
+.ds-icon { width: 38px; height: 38px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.ds-info { flex: 1; }
+.ds-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.ds-meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.ds-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+.badge-connected { background: var(--color-background-success); color: var(--color-text-success); }
+.badge-linked { background: var(--color-background-info); color: var(--color-text-info); }
+</style>
+
+<div class="portal">
+  <div class="hero">
+    <h1>台北市政府開放資料平台</h1>
+    <p>整合各機關資料集，以 AI 協助市民快速找到所需資訊</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('search',this)">AI 資料搜尋</button>
+    <button class="tab" onclick="switchTab('datasets',this)">資料集總覽</button>
+    <button class="tab" onclick="switchTab('stats',this)">資料統計</button>
+    <button class="tab" onclick="switchTab('dashboard',this)">城市儀表板</button>
+    <button class="tab" onclick="switchTab('comments',this)">民眾建議</button>
+  </div>
+
+  <!-- ══ 搜尋頁 ══ -->
+  <div id="tab-search" class="section active">
+    <div class="ai-badge">關鍵字語意搜尋</div>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="用白話描述您想找的資料，例如：我想知道附近哪裡可以丟垃圾" />
+      <button id="search-btn" onclick="doAISearch()">搜尋 ↗</button>
+    </div>
+    <div class="search-hint">不用想關鍵字，直接說您想找什麼，AI 會幫您分析</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <button style="font-size:12px;padding:4px 12px;" onclick="preset('我想找附近可以丟垃圾的地方')">我想找附近可以丟垃圾的地方</button>
+      <button style="font-size:12px;padding:4px 12px;" onclick="preset('哪裡可以捐舊衣服')">哪裡可以捐舊衣服</button>
+      <button style="font-size:12px;padding:4px 12px;" onclick="preset('家裡有大型廢棄物要丟怎麼辦')">家裡有大型廢棄物要丟怎麼辦</button>
+      <button style="font-size:12px;padding:4px 12px;" onclick="window.open('https://citydashboard.taipei/mapview?index=services&city=taipei','_blank')">台北城市儀表板 ↗</button>
+    </div>
+
+    <div class="thinking-box" id="thinking">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span id="thinking-msg">AI 正在分析您的描述...</span>
+    </div>
+
+    <div class="suggest-box" id="suggest-box">
+      <div class="suggest-header">
+        <span>AI 建議的搜尋方向 — <strong id="suggest-label"></strong></span>
+        <button class="suggest-clear" onclick="clearAll()">✕ 清除</button>
+      </div>
+      <div class="suggest-intent" id="suggest-intent"></div>
+      <div class="suggest-chips" id="suggest-chips"></div>
+    </div>
+
+    <div id="search-results"></div>
+    <div id="search-empty" class="empty-state" style="display:block">用白話輸入您的需求，AI 會幫您從三個環保資料集中找到最相關的</div>
+  </div>
+
+  <!-- ══ 資料集總覽 ══ -->
+  <div id="tab-datasets" class="section">
+    <div style="margin-bottom:4px;font-size:13px;color:var(--color-text-secondary);">共 3 個資料集（丟垃圾主題包）</div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:1rem;">資料來源：台北市環境保護局 ✕ data.taipei</div>
+
+    <div>
+      <div class="dataset-item" onclick="showDataset('clean')">
+        <div class="ds-icon" style="background:#e1f5ee;">🗑️</div>
+        <div class="ds-info">
+          <div class="ds-name">台北市行人專用清潔箱總表</div>
+          <div class="ds-meta">環保局・1,401 筆・含經緯度・114年更新</div>
+        </div>
+        <span class="ds-badge badge-connected">已串接</span>
+      </div>
+      <div class="dataset-item" onclick="showDataset('clothes')">
+        <div class="ds-icon" style="background:#e6f1fb;">👕</div>
+        <div class="ds-info">
+          <div class="ds-name">台北市社會福利團體舊衣回收設施據點</div>
+          <div class="ds-meta">環保局・含經緯度・不定期更新</div>
+        </div>
+        <span class="ds-badge badge-linked">data.taipei</span>
+      </div>
+      <div class="dataset-item" onclick="showDataset('bulk')">
+        <div class="ds-icon" style="background:#faeeda;">🛋️</div>
+        <div class="ds-info">
+          <div class="ds-name">台北市巨大廢棄物清運</div>
+          <div class="ds-meta">環保局・12行政區電話預約資訊・不定期更新</div>
+        </div>
+        <span class="ds-badge badge-linked">data.taipei</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 資料統計 ══ -->
+  <div id="tab-stats" class="section">
+    <!-- 子 tab -->
+    <div style="display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:0.5px solid var(--color-border-tertiary);">
+      <button class="tab active" id="stab-clean" onclick="switchStatTab('clean',this)" style="font-size:13px;padding:6px 14px;">🗑️ 清潔箱</button>
+      <button class="tab" id="stab-clothes" onclick="switchStatTab('clothes',this)" style="font-size:13px;padding:6px 14px;">👕 舊衣回收</button>
+      <button class="tab" id="stab-bulk" onclick="switchStatTab('bulk',this)" style="font-size:13px;padding:6px 14px;">🛋️ 巨大廢棄物</button>
+    </div>
+
+    <!-- 清潔箱 -->
+    <div id="stat-clean" class="stat-panel">
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:1rem;">台北市行人專用清潔箱總表・環保局・本地資料</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">總筆數</div><div class="stat-val">1,401</div><div class="stat-sub">清潔箱位置</div></div>
+        <div class="stat-card"><div class="stat-label">行政區</div><div class="stat-val">12</div><div class="stat-sub">涵蓋範圍</div></div>
+        <div class="stat-card"><div class="stat-label">平均/區</div><div class="stat-val">116.8</div><div class="stat-sub">個清潔箱</div></div>
+        <div class="stat-card"><div class="stat-label">最多</div><div class="stat-val">士林區</div><div class="stat-sub">209 個</div></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;">各行政區分布</div>
+      <div id="bar-chart" style="margin-bottom:1.5rem;"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;">地圖</div>
+      <div style="border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);height:480px;">
+        <iframe
+          src="taipei_cleanbox_map.html"
+          style="width:100%;height:100%;border:none;display:block;"
+          title="台北市行人專用清潔箱地圖"
+          loading="lazy">
+        </iframe>
+      </div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px;">地圖資料：台北市環保局・1,399 個清潔箱・可按行政區篩選</div>
+    </div>
+
+    <!-- 舊衣回收 -->
+    <div id="stat-clothes" class="stat-panel" style="display:none;">
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:1rem;">臺北市社會福利團體舊衣回收設施據點・環保局・1,181 筆</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">回收箱總數</div><div class="stat-val">1,181</div><div class="stat-sub">個地點</div></div>
+        <div class="stat-card"><div class="stat-label">社福團體數</div><div class="stat-val">48</div><div class="stat-sub">個機構</div></div>
+        <div class="stat-card"><div class="stat-label">涵蓋行政區</div><div class="stat-val">12</div><div class="stat-sub">個行政區</div></div>
+        <div class="stat-card"><div class="stat-label">最多箱數區</div><div class="stat-val" style="font-size:16px;">大安區</div><div class="stat-sub">206 箱</div></div>
+        <div class="stat-card"><div class="stat-label">最多箱機構</div><div class="stat-val" style="font-size:11px;padding-top:6px;line-height:1.4">臺北市視障<br>樂活福利促進會</div><div class="stat-sub">40 箱</div></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;">各行政區回收箱數</div>
+      <div id="chart-clothes-wrap" style="position:relative;height:220px;margin-bottom:1.5rem;">
+        <canvas id="chart-clothes" role="img" aria-label="各行政區舊衣回收箱數量"></canvas>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;">Top 10 社福機構</div>
+      <div id="chart-orgs-wrap" style="position:relative;height:280px;margin-bottom:1rem;">
+        <canvas id="chart-orgs" role="img" aria-label="Top 10 社福機構回收箱數量"></canvas>
+      </div>
+    </div>
+
+    <!-- 巨大廢棄物 -->
+    <div id="stat-bulk" class="stat-panel" style="display:none;">
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:1rem;">台北市巨大廢棄物清運・環保局・65 個分隊</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">清運分隊總數</div><div class="stat-val">65</div><div class="stat-sub">個分隊</div></div>
+        <div class="stat-card"><div class="stat-label">涵蓋行政區</div><div class="stat-val">12</div><div class="stat-sub">個行政區</div></div>
+        <div class="stat-card"><div class="stat-label">涵蓋轄區里</div><div class="stat-val">472</div><div class="stat-sub">個里</div></div>
+        <div class="stat-card"><div class="stat-label">分隊最多</div><div class="stat-val" style="font-size:16px;">士林區</div><div class="stat-sub">8 個分隊</div></div>
+        <div class="stat-card"><div class="stat-label">預約時間</div><div class="stat-val" style="font-size:14px;">06–16:30</div><div class="stat-sub">每日</div></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;">各行政區分隊數</div>
+      <div id="chart-squads-wrap" style="position:relative;height:220px;margin-bottom:1.5rem;">
+        <canvas id="chart-squads" role="img" aria-label="各行政區清運分隊數量"></canvas>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;">各分隊聯絡電話</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="bulk-search" placeholder="搜尋行政區，例如：大安區、士林區..." oninput="filterBulkTable()" style="flex:1;font-size:13px;" />
+        <button onclick="filterBulkTable('clear')" style="font-size:12px;padding:0 12px;white-space:nowrap;">清除</button>
+      </div>
+      <div id="bulk-table" style="overflow-x:auto;"></div>
+    </div>
+    </div>
+  </div>
+
+  <!-- ══ 民眾建議 ══ -->
+  <div id="tab-dashboard" class="section">
+    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;">台北城市儀表板由台北市政府資訊局建置，整合即時城市數據。以下嵌入垃圾車收運點位元件，如無法顯示請點右上角連結開啟完整儀表板。</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);">垃圾車收運點位</div>
+      <a href="https://citydashboard.taipei/mapview?index=services&city=taipei" target="_blank" class="ext-link" style="font-size:11px;">開啟完整地圖 ↗</a>
+    </div>
+    <div style="border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);">
+      <iframe
+        title="垃圾車收運點位"
+        src="https://citydashboard.taipei/embed/141/taipei"
+        width="100%" height="460"
+        style="border:none;display:block;"
+        frameborder="0" allow="fullscreen" loading="lazy">
+      </iframe>
+    </div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px;margin-bottom:1.5rem;">資料來源：台北城市儀表板・環保局</div>
+
+    <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;">相關連結</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="https://citydashboard.taipei/dashboard?index=metro&city=taipei" target="_blank" class="ext-link">儀表板總覽 ↗</a>
+      <a href="https://citydashboard.taipei/mapview?index=services&city=taipei" target="_blank" class="ext-link">地圖交叉比對 ↗</a>
+    </div>
+  </div>
+
+  <div id="tab-comments" class="section">
+    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;">歡迎提供對資料使用的建議，例如希望新增哪些資料集、資料格式改善等。</div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:var(--color-text-primary);">相關連結</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;">
+      <a href="https://data.taipei/" class="ext-link">台北市資料大平台 ↗</a>
+      <a href="https://www.dep.gov.taipei/" class="ext-link">環境保護局 ↗</a>
+      <a href="https://data.gov.tw/" class="ext-link">政府資料開放平台 ↗</a>
+      <a href="https://citydashboard.taipei/dashboard?index=metro&city=taipei" class="ext-link">台北城市儀表板 ↗</a>
+    </div>
+    <div class="comment-form">
+      <textarea id="comment-input" placeholder="輸入您的建議，例如：希望新增餐飲衛生稽查資料集..."></textarea>
+      <button style="margin-top:8px;width:100%;" onclick="addComment()">送出建議</button>
+    </div>
+    <div id="comment-list">
+      <div class="comment-item"><div class="comment-meta">市民 A・2025/01/10</div>希望可以加入 YouBike 站點與清潔箱的距離分析，讓騎車時也能找到垃圾桶</div>
+      <div class="comment-item"><div class="comment-meta">里長 B・2025/01/08</div>建議增加清潔箱上次清空時間，讓民眾知道哪些已滿</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ══ 預計算統計資料（從 CSV 算好嵌入，不用在瀏覽器跑） ══ */
+const CLOTHES_DISTRICT = {"大安區":206,"文山區":158,"士林區":140,"信義區":122,"松山區":108,"中山區":101,"大同區":72,"中正區":67,"北投區":63,"內湖區":56,"南港區":50,"萬華區":38};
+const CLOTHES_ORG_TOP10 = {"臺北市視障樂活福利促進會":40,"社團法人台北生命勵樂活輔健會":39,"台北市盲人福利協進會":39,"台北市康復之友協會":38,"台北市視障生活品質福利促進會":35,"台北市心理復健家屬聯合協會":35,"台北市私立彩虹村家園":35,"台北市自閉症家長協會":34,"財團法人台北市樹仁社會福利基金會":34,"臺北市唐氏症家長協會":30};
+const BULK_DISTRICT_SQUADS = {"南港區":3,"信義區":5,"大安區":7,"中正區":6,"萬華區":6,"大同區":4,"中山區":7,"松山區":4,"內湖區":5,"士林區":8,"北投區":5,"文山區":5};
+const BULK_DISTRICT_VILLAGES = {"南港區":20,"信義區":41,"大安區":53,"中正區":31,"萬華區":40,"大同區":27,"中山區":42,"松山區":33,"內湖區":43,"士林區":52,"北投區":47,"文山區":43};
+const BULK_ROWS = [["南港區","玉成分隊","(02)27881921",8],["南港區","南港分隊","(02)27837522",7],["南港區","舊莊分隊","(02)27825421",5],["信義區","三張犁分隊","(02)27493261",9],["信義區","五分埔分隊","(02)27534330",10],["信義區","六張犁分隊","(02)27200326",8],["信義區","吳興分隊","(02)27209037",6],["信義區","福德分隊","(02)27276061",8],["大安區","台大分隊","(02)23633215",5],["大安區","瑞安分隊","(02)23634850",8],["大安區","和平分隊","(02)23625869",10],["大安區","臥龍分隊","(02)23785530",8],["大安區","安和分隊","(02)27374644",9],["大安區","新生分隊","(02)27529383",6],["大安區","敦化分隊","(02)27786724",7],["中正區","忠孝分隊","(02)23914913",4],["中正區","仁愛分隊","(02)23911057",3],["中正區","博愛分隊","(02)23311499",3],["中正區","泉州分隊","(02)23014509",8],["中正區","南昌分隊","(02)23011231",8],["中正區","公館分隊","(02)23688346",5],["萬華區","武昌分隊","(02)23705446",2],["萬華區","漢中分隊","(02)23146086",7],["萬華區","昆明分隊","(02)23362574",6],["萬華區","大理分隊","(02)23068781",7],["萬華區","東園分隊","(02)23378057",9],["萬華區","青年分隊","(02)23887540",9],["大同區","大龍分隊","(02)25860781",7],["大同區","延平分隊","(02)25521952",7],["大同區","建成分隊","(02)25535107",7],["大同區","蘭州分隊","(02)25928991",6],["中山區","大直分隊","(02)25338564",7],["中山區","圓山分隊","(02)25936222",5],["中山區","中山分隊","(02)25110958",7],["中山區","長安分隊","(02)27775545",5],["中山區","南京分隊","(02)27132687",6],["中山區","民一分隊","(02)25098870",6],["中山區","民二分隊","(02)25093774",6],["松山區","松山分隊","(02)27678552",7],["松山區","中崙分隊","(02)25473033",10],["松山區","東社分隊","(02)25140138",8],["松山區","塔悠分隊","(02)27671927",8],["內湖區","文德分隊","(02)27915524",9],["內湖區","內湖分隊","(02)27905422",10],["內湖區","東湖分隊","(02)26343097",12],["內湖區","西湖分隊","(02)27992215",8],["內湖區","科技分隊","(02)27911240",4],["士林區","天母分隊","(02)28742048",10],["士林區","後港分隊","(02)28813921",7],["士林區","社子分隊社子班","(02)28136658",6],["士林區","社子分隊葫蘆班","(02)28150984",4],["士林區","文林分隊文內班","(02)28369617",4],["士林區","文林分隊文外班","(02)28839927",6],["士林區","蘭雅分隊","(02)28311586",9],["士林區","草山分隊","(02)28626334",6],["北投區","石牌分隊","(02)28235650",17],["北投區","光明分隊","(02)28967500",18],["北投區","陽明分隊(一班)","(02)28617757",2],["北投區","陽明分隊(二班)","(02)28950230",5],["北投區","關渡分隊","(02)28950256",5],["文山區","景美分隊","(02)29305836",12],["文山區","興隆分隊","(02)89315653",11],["文山區","復興分隊","(02)29377951",11],["文山區","木柵分隊","(02)22340528",6],["文山區","博嘉分隊","(02)22397182",3]];
+
+const DISTRICT_ORDER = ['士林區','大安區','中山區','松山區','大同區','中正區','內湖區','萬華區','北投區','文山區','信義區','南港區'];
+const CHART_COLORS = ['#378ADD','#3a9e6e','#e07a2a','#8a5cd4','#c9a800','#e04fa0','#20a080','#e05c5c','#5090e0','#a05ce0','#e08020','#c05050'];
+let chartsBuilt = {};
+
+/* ══ 統計子 tab 切換 ══ */
+function switchStatTab(id, btn) {
+  document.querySelectorAll('.stat-panel').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#tab-stats .tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('stat-' + id).style.display = 'block';
+  btn.classList.add('active');
+  if (!chartsBuilt[id]) { buildChart(id); chartsBuilt[id] = true; }
+}
+
+function buildChart(id) {
+  if (id === 'clothes') {
+    // 行政區長條圖
+    const dLabels = DISTRICT_ORDER;
+    const dData = dLabels.map(d => CLOTHES_DISTRICT[d] || 0);
+    new Chart(document.getElementById('chart-clothes'), {
+      type: 'bar',
+      data: { labels: dLabels, datasets: [{ label: '回收箱數', data: dData, backgroundColor: '#378ADD99', borderColor: '#378ADD', borderWidth: 0.5, borderRadius: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { beginAtZero: true, ticks: { font: { size: 11 } } } } }
+    });
+    // Top10 機構水平圖
+    const orgEntries = Object.entries(CLOTHES_ORG_TOP10);
+    new Chart(document.getElementById('chart-orgs'), {
+      type: 'bar',
+      data: { labels: orgEntries.map(([k]) => k.length > 12 ? k.slice(0,12)+'…' : k), datasets: [{ label: '回收箱數', data: orgEntries.map(([,v]) => v), backgroundColor: orgEntries.map((_,i) => CHART_COLORS[i%12]+'99'), borderColor: orgEntries.map((_,i) => CHART_COLORS[i%12]), borderWidth: 0.5, borderRadius: 3 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 11 } } }, y: { ticks: { font: { size: 11 } } } } }
+    });
+  }
+  if (id === 'bulk') {
+    const dKeys = Object.keys(BULK_DISTRICT_SQUADS).sort((a,b) => BULK_DISTRICT_SQUADS[b]-BULK_DISTRICT_SQUADS[a]);
+    new Chart(document.getElementById('chart-squads'), {
+      type: 'bar',
+      data: { labels: dKeys, datasets: [{ label: '分隊數', data: dKeys.map(d => BULK_DISTRICT_SQUADS[d]), backgroundColor: '#3a9e6e99', borderColor: '#3a9e6e', borderWidth: 0.5, borderRadius: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 11 }, maxRotation: 45 } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } } } }
+    });
+    renderBulkTable(BULK_ROWS);
+  }
+}
+
+function renderBulkTable(rows, showAll) {
+  const display = showAll ? rows : rows.slice(0, 5);
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="border-bottom:0.5px solid var(--color-border-tertiary);">
+      <th style="text-align:left;padding:5px 8px;font-size:11px;color:var(--color-text-tertiary);font-weight:500;">行政區</th>
+      <th style="text-align:left;padding:5px 8px;font-size:11px;color:var(--color-text-tertiary);font-weight:500;">分隊</th>
+      <th style="text-align:left;padding:5px 8px;font-size:11px;color:var(--color-text-tertiary);font-weight:500;">電話</th>
+    </tr></thead><tbody>`;
+  if (rows.length === 0) {
+    html += `<tr><td colspan="3" style="padding:1.5rem;text-align:center;color:var(--color-text-tertiary);font-size:13px;">查無結果</td></tr>`;
+  } else {
+    let lastDistrict = '';
+    display.forEach(([district, squad, phone]) => {
+      const showDistrict = district !== lastDistrict;
+      lastDistrict = district;
+      html += `<tr style="border-bottom:0.5px solid var(--color-border-tertiary);">
+        <td style="padding:6px 8px;font-weight:${showDistrict?'500':'400'};color:${showDistrict?'var(--color-text-primary)':'var(--color-text-tertiary)'};">${showDistrict ? district : ''}</td>
+        <td style="padding:6px 8px;color:var(--color-text-secondary);">${squad}</td>
+        <td style="padding:6px 8px;color:var(--color-text-info);">${phone}</td>
+      </tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  const hasMore = !showAll && rows.length > 5;
+  document.getElementById('bulk-table').innerHTML = html;
+  if (hasMore) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-action';
+    btn.style.marginTop = '8px';
+    btn.textContent = `顯示全部 ${rows.length} 筆 ↓`;
+    btn.onclick = () => renderBulkTable(rows, true);
+    document.getElementById('bulk-table').appendChild(btn);
+  }
+}
+
+function filterBulkTable(cmd) {
+  const input = document.getElementById('bulk-search');
+  if (cmd === 'clear') { input.value = ''; }
+  const q = input.value.trim();
+  const filtered = q ? BULK_ROWS.filter(([d, s]) => d.includes(q) || s.includes(q)) : BULK_ROWS;
+  renderBulkTable(filtered, !!q);
+}
+
+/* ══ 三個資料集定義 ══ */
+const DATASETS = {
+  clean: {
+    id: 'clean',
+    name: '台北市行人專用清潔箱總表',
+    icon: '🗑️',
+    desc: '全市 1,401 個行人專用清潔箱位置，含行政區、地址、經緯度座標。',
+    org: '環保局',
+    count: '1,401 筆',
+    pills: ['含地理座標','環保','公共設施'],
+    hasGeo: true,
+    hasTel: false,
+    dtUrl: 'https://data.taipei/dataset/detail?id=',  // 本地資料集，無外部ID
+    keywords: ['清潔箱','垃圾桶','垃圾','丟垃圾','丟棄','廢棄物','廢棄','公共','行人'],
+  },
+  clothes: {
+    id: 'clothes',
+    name: '台北市社會福利團體舊衣回收設施據點',
+    icon: '👕',
+    desc: '社福團體設置的舊衣回收箱地點，含電話、行政區、核准地點、經緯度。',
+    org: '環保局',
+    count: '不定期更新',
+    pills: ['含地理座標','舊衣','回收','社福'],
+    hasGeo: true,
+    hasTel: true,
+    dtUrl: 'https://data.taipei/dataset/detail?id=33de0950-24df-463d-b199-da3fbf612ef1',
+    keywords: ['舊衣','衣服','捐衣','二手','回收箱','舊衣回收','捐贈','紡織'],
+  },
+  bulk: {
+    id: 'bulk',
+    name: '台北市大型廢棄物清運',
+    icon: '🛋️',
+    desc: '12 行政區大型廢棄物（如家具、家電）的預約清運電話與時間。需電話預約，環保局各分隊派車清運。',
+    org: '環保局',
+    count: '12 行政區',
+    pills: ['電話預約','大型廢棄物','清運'],
+    hasGeo: false,
+    hasTel: true,
+    dtUrl: 'https://data.taipei/dataset/detail?id=d47fe546-e26e-4079-9eca-73c2d45a8575',
+    keywords: ['大型','巨大','家具','家電','沙發','床','冰箱','洗衣機','電視','廢棄','清運','預約'],
+  }
+};
+
+/* ══ 長條圖 ══ */
+const BAR_DATA = [
+  {n:'士林區',c:209},{n:'大安區',c:169},{n:'中山區',c:150},{n:'松山區',c:134},
+  {n:'大同區',c:133},{n:'中正區',c:129},{n:'內湖區',c:117},{n:'萬華區',c:105},
+  {n:'北投區',c:94},{n:'文山區',c:71},{n:'信義區',c:65},{n:'南港區',c:24}
+];
+function buildBars() {
+  document.getElementById('bar-chart').innerHTML = BAR_DATA.map(d=>`
+    <div class="bar-row">
+      <span class="bar-label">${d.n}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(d.c/209*100).toFixed(1)}%"></div></div>
+      <span class="bar-count">${d.c}</span>
+    </div>`).join('');
+}
+buildBars();
+
+/* ══ Tab ══ */
+function switchTab(t, btn) {
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function showDataset(id) {
+  switchTab('stats', document.querySelectorAll('.tab')[2]);
+  const btn = document.getElementById('stab-' + id);
+  if (btn) switchStatTab(id, btn);
+}
+
+function preset(q) {
+  document.getElementById('search-input').value = q;
+  doAISearch();
+}
+
+/* ══ 關鍵字字典（同義詞展開，不需要 API） ══ */
+const KEYWORD_DICT = {
+  clean: {
+    label: '清潔箱位置', icon: '🗑️', type: '地圖',
+    words: [
+      '清潔箱','垃圾桶','垃圾車','垃圾袋','投入','行人',
+      '廚餘','餅乾','食物','食品','廚房垃圾','剩菜','剩飯','過期食品',
+      '丟東西','丟垃圾','丟棄','扔','亂丟',
+    ]
+  },
+  clothes: {
+    label: '舊衣回收據點', icon: '👕', type: '回收',
+    words: [
+      '舊衣','衣服','捐衣','二手衣','舊衣物','舊衣回收','捐贈','捐',
+      '衣物','紡織','布料','舊衣箱','二手','換季','不要的衣服',
+      '丟東西','丟垃圾',
+    ]
+  },
+  bulk: {
+    label: '大型廢棄物清運', icon: '🛋️', type: '電話預約',
+    words: [
+      '大型','巨大','家具','沙發','床','冰箱','洗衣機','電視','冷氣',
+      '家電','桌子','椅子','書櫃','衣櫃','鐵床','彈簧床','舊家電',
+      '大型廢棄物','大件','搬家','舊電器',
+      '清潔隊','叫人來收','叫人收','約收','預約收','收走','來收','清運','預約',
+      '大垃圾','大型垃圾','大件垃圾','廢家具','廢電器','廢棄家電',
+      '丟東西','丟垃圾',
+    ]
+  }
+};
+
+/* ══ 意圖解讀（輸入 → 顯示給使用者看的描述） ══ */
+function guessIntent(q, matched) {
+  if (matched.length === 0) return '相關環保或回收設施';
+  if (matched.length === 1) {
+    const d = KEYWORD_DICT[matched[0]];
+    return { clean:'附近的清潔箱位置', clothes:'舊衣回收據點', bulk:'大型廢棄物預約清運' }[matched[0]];
+  }
+  if (matched.includes('clean') && matched.includes('clothes')) return '垃圾或回收相關設施';
+  if (matched.includes('bulk')) return '大型廢棄物清運相關資訊';
+  return '環保回收相關設施';
+}
+
+/* ══ 主搜尋（純本地，不需 API） ══ */
+function doAISearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  clearResults();
+
+  // 比對所有資料集
+  const matched = Object.entries(KEYWORD_DICT)
+    .filter(([, d]) => d.words.some(w => q.includes(w)))
+    .map(([id]) => id);
+
+  const showIds = matched.length > 0 ? matched : ['clean', 'clothes', 'bulk'];
+
+  const keywords = showIds.map(id => ({
+    label: KEYWORD_DICT[id].label,
+    icon:  KEYWORD_DICT[id].icon,
+    type:  KEYWORD_DICT[id].type,
+    dataset: id
+  }));
+
+  showSuggestions(q, {
+    intent: guessIntent(q, matched),
+    keywords,
+    isGuess: matched.length === 0
+  });
+}
+
+/* ══ Step 2：顯示建議 chip ══ */
+function showSuggestions(q, parsed) {
+  document.getElementById('suggest-label').textContent = `「${q}」`;
+  const intentText = parsed.isGuess
+    ? `找不到完全符合的關鍵字，以下是平台現有的資料方向：`
+    : `系統解讀：您可能想找 <em>${parsed.intent}</em>，請選擇最符合的方向：`;
+  document.getElementById('suggest-intent').innerHTML = intentText;
+  document.getElementById('suggest-chips').innerHTML = parsed.keywords.map(k=>`
+    <button class="s-chip" onclick="showDatasetResult('${k.dataset}')">
+      <span>${k.icon}</span>
+      <span>${k.label}</span>
+      <span class="chip-tag">${k.type}</span>
+    </button>`).join('');
+  document.getElementById('suggest-box').style.display = 'block';
+}
+
+/* ══ Step 3：點 chip → 顯示資料集卡片 ══ */
+function showDatasetResult(dsId) {
+  document.getElementById('suggest-box').style.display = 'none';
+  document.getElementById('search-empty').style.display = 'none';
+
+  const ds = DATASETS[dsId];
+  if(!ds) return;
+
+  const pillsHtml = ds.pills.map(p => {
+    let cls = 'pill';
+    if(p.includes('地理') || p.includes('座標')) cls += ' pill-geo';
+    if(p.includes('電話') || p.includes('預約')) cls += ' pill-tel';
+    return `<span class="${cls}">${p}</span>`;
+  }).join('');
+
+  const note = `<div class="source-note"><span class="source-dot"></span>資料來源：data.taipei ✕ 台北市${ds.org}</div>`;
+
+  const card = `
+    <div class="result-card">
+      <div class="result-card-header">
+        <h3>${ds.icon} ${ds.name}</h3>
+      </div>
+      <div class="result-desc">${ds.desc}</div>
+      <div class="result-pills">
+        ${pillsHtml}
+        <span class="pill pill-src">${ds.org}</span>
+        <span class="pill pill-src">${ds.count}</span>
+      </div>
+      <div class="result-actions">
+        ${ds.hasGeo ? `<button class="btn-action" onclick="sendPrompt('幫我用 Leaflet.js 顯示「${ds.name}」的地圖，資料有經緯度欄位')">查看地圖 ↗</button>` : ''}
+        ${ds.hasTel ? `<button class="btn-action" onclick="showDataset('bulk')">查看聯絡資訊 ↗</button>` : ''}
+        <a class="btn-action" href="${ds.dtUrl}" target="_blank">前往 data.taipei ↗</a>
+        <button class="btn-action" onclick="showDataset('${dsId}')">查看統計 ↗</button>
+      </div>
+    </div>`;
+
+  document.getElementById('search-results').innerHTML = note + card;
+}
+
+/* ══ helpers ══ */
+function setThinking(show, msg) {
+  const t = document.getElementById('thinking');
+  t.style.display = show ? 'flex' : 'none';
+  if(msg) document.getElementById('thinking-msg').textContent = msg;
+}
+function clearResults() {
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-empty').style.display = 'none';
+  document.getElementById('suggest-box').style.display = 'none';
+}
+function clearAll() {
+  clearResults();
+  document.getElementById('search-empty').style.display = 'block';
+  document.getElementById('search-input').value = '';
+}
+function addComment() {
+  const inp = document.getElementById('comment-input');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  const list = document.getElementById('comment-list');
+  const d = new Date();
+  const item = document.createElement('div');
+  item.className = 'comment-item';
+  item.innerHTML = `<div class="comment-meta">匿名市民・${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}</div>${txt}`;
+  list.insertBefore(item, list.firstChild);
+  inp.value = '';
+}
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter') doAISearch();
+});
+</script>
